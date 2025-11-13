@@ -1,35 +1,32 @@
-#!/usr/bin/python3
+import numpy as np
+import cv2
 
-import os
+def anonymize_face(buffer,response):
+    # Leer la imagen del buffer
+    nparr = np.fromstring(buffer, np.uint8)
 
-import boto3
+    img = cv2.imdecode(nparr,cv2.IMREAD_COLOR)
 
-from dotenv import load_dotenv
+    height, width, _ = img.shape
 
-# Load env variables from .env file
-load_dotenv()
+    for faceDetail in response['FaceDetails']:
+        box = faceDetail['BoundingBox']
+        x = int(width * box['Left'])
+        y = int(height * box['Top'])
+        w = int(width * box['Width'])
+        h = int(height * box['Height'])
 
-# Get env variables
-accessKeyId = os.environ.get('ACCESS_KEY_ID')
-secretKey = os.environ.get('ACCESS_SECRET_KEY')
-bucket = os.environ.get('BUCKET_SOURCE')
-region = os.environ.get('REGION')
+        # Obtener region of interest (ROI)
+        roi = img[y:y+h, x:x+w]
 
-# Create the service Rekognition and assign credentials
-rekognition_client = boto3.Session(
-    aws_access_key_id=accessKeyId,
-    aws_secret_access_key=secretKey,
-    region_name=region).client('rekognition')
+        # Aplicamos filtro gausiano
+        roi = cv2.GaussianBlur(roi, (83, 83), 30)
 
-def detect_faces(img):
-    # Assign parameters and call the service
-    try:
-        response = rekognition_client.detect_faces(
-            Image={'S3Object': {'Bucket': bucket, 'Name': img}}, Attributes=['DEFAULT'])
+        # Para mantener proporciones usamos y de roi y x de roi, ya que estos se encuentran en la poss 0 y 1 de la matriz
+        img[y:y+roi.shape[0], x:x+roi.shape[1]] = roi
 
-        print("Image task recognition has been successfully run")
-    except:
-        raise Exception("An unexpected error was raised recognizing an image")
+    print("La tarea de difunidado se a realiado con exito")
 
-
-    return response
+    # Encode image and return image with blurred faces es decir pasamos de matriz a imagen normal
+    _, res_buffer = cv2.imencode('.jpg', img)
+    return res_buffer
