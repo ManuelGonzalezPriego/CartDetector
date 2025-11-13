@@ -21,15 +21,12 @@ rekognition_client = boto3.Session(
     aws_secret_access_key=secretKey,
     region_name=region).client('rekognition')
 
+
 def detect_text_in_image(img):
-    # Assign parameters and call the service
     try:
         response = rekognition_client.detect_text(
-            Image={'S3Object': {'Bucket': bucket, 'Name': img}}, Attributes=['DEFAULT'])
-
-        print("Image task recognition has been successfully run")
-    except:
-        raise Exception("An unexpected error was raised recognizing an image")
-
-
-    return response
+            Image={'S3Object': {'Bucket': bucket, 'Name': img}}
+        )
+        return response
+    except Exception as e:
+        raise Exception(f"Error detecting text: {e}")
