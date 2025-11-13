@@ -1,3 +1,4 @@
+from botocore.exceptions import ClientError
 from flask import Flask, request, Response
 import boto3, os, base64
 from dotenv import load_dotenv
@@ -26,7 +27,7 @@ s3 = boto3.Session(
 def analyzeImage():
     key = request.get_json()['key']
     if key is None:
-        abort(400)
+        os.abort(400)
     try:
         # Llamo a una función que creará el cliente Rekognition y devolverá
         # una lista con las caras detectadas
@@ -41,7 +42,7 @@ def analyzeImage():
         s3.Object(bucket_dest, f"result_{key}").put(Body=img_dec)
     except ClientError as e:
         print(e)
-        abort(500)
+        os.abort(500)
     return Response(status=200)
 # Run the app
 if __name__ == "__main__":
