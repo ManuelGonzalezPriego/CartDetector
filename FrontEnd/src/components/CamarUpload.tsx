@@ -1,15 +1,21 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { analyzeText } from "../services/api";
 import type { DetectedText } from "../interfaces/DetectedText";
 
 export default function CameraCapture() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const [camera, setCamera] = useState<"user" | "environment">("environment");
   const [message, setMessage] = useState<string | null>(null);
   const [results, setResults] = useState<DetectedText[]>([]);
   const [loading, setLoading] = useState(false);
   const [streamStarted, setStreamStarted] = useState(false);
+
+  // Detectar si es móvil
+  useEffect(() => {
+    setIsMobile(/Mobi|Android/i.test(navigator.userAgent));
+  }, []);
 
   // Encender la cámara
   const startCamera = async () => {
@@ -17,15 +23,14 @@ export default function CameraCapture() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: camera },
+        video: isMobile ? { facingMode: camera } : true,
       });
-
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
       setStreamStarted(true);
     } catch (err) {
       console.error(err);
-      setMessage("❌ No se pudo acceder a la cámara");
+      setMessage("No se pudo acceder a la cámara");
       setTimeout(() => setMessage(null), 3000);
     }
   };
@@ -41,36 +46,36 @@ export default function CameraCapture() {
     canvasRef.current.height = videoRef.current.videoHeight;
     ctx.drawImage(videoRef.current, 0, 0);
 
-    setLoading(true); // Mover aquí para que se active antes del callback
+    setLoading(true);
 
     canvasRef.current.toBlob(async (blob) => {
       if (!blob) {
-        setMessage("❌ Error capturando la imagen");
+        setMessage("Error capturando la imagen");
         setLoading(false);
         setTimeout(() => setMessage(null), 3000);
         return;
       }
 
-      const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+      const file = new File([blob], `photo${Date.now()}.jpg`, { type: "image/jpeg" });
 
       try {
         const data = await analyzeText(file);
 
         if (data && Array.isArray(data.detected_texts)) {
           if (data.detected_texts.length > 0) {
-            setMessage("✅ Imagen subida y texto detectado correctamente");
+            setMessage("Imagen subida y texto detectado correctamente");
             setResults(data.detected_texts);
           } else {
-            setMessage("⚠️ Imagen subida pero no se detectó texto");
+            setMessage("Imagen subida pero no se detectó texto");
             setResults([]);
           }
         } else {
-          setMessage("❌ Respuesta de la API no válida");
+          setMessage("Respuesta de la API no válida");
           setResults([]);
         }
       } catch (err) {
         console.error(err);
-        setMessage("❌ Error subiendo la imagen");
+        setMessage("Error subiendo la imagen");
         setResults([]);
       } finally {
         setLoading(false);
@@ -81,22 +86,27 @@ export default function CameraCapture() {
 
   return (
     <div>
-      <div style={{ marginBottom: "10px" }}>
-        <label>Seleccionar cámara: </label>
-        <select
-          value={camera}
-          onChange={(e) => setCamera(e.target.value as "user" | "environment")}
-        >
-          <option value="environment">Trasera</option>
-          <option value="user">Delantera</option>
-        </select>
-        <button
-          onClick={startCamera}
-          style={{ marginLeft: "10px", padding: "5px 10px" }}
-        >
-          {streamStarted ? "Reiniciar cámara" : "Iniciar cámara"}
-        </button>
-      </div>
+      {isMobile && (
+        <div style={{ marginBottom: 10 }}>
+          <label>Seleccionar cámara: </label>
+          <select
+            value={camera}
+            onChange={(e) =>
+              setCamera(e.target.value as "user" | "environment")
+            }
+          >
+            <option value="environment">Trasera</option>
+            <option value="user">Delantera</option>
+          </select>
+        </div>
+      )}
+
+      <button
+        onClick={startCamera}
+        style={{ marginBottom: 10, padding: "5px 10px" }}
+      >
+        {streamStarted ? "Reiniciar cámara" : "Iniciar cámara"}
+      </button>
 
       <video
         ref={videoRef}
@@ -110,10 +120,33 @@ export default function CameraCapture() {
 
       <button
         onClick={takePhoto}
-        style={{ display: "block", marginTop: 10, padding: "5px 10px" }}
         disabled={loading}
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: 10,
+          width: 70,
+          height: 70,
+          borderRadius: "50%",
+          border: "none",
+          backgroundColor: "#007bff",
+          cursor: "pointer",
+          position: "relative",
+        }}
       >
-        {loading ? "Cargando..." : "Tomar foto"}
+        {loading && (
+          <div
+            style={{
+              width: 30,
+              height: 30,
+              border: "4px solid rgba(255,255,255,0.3)",
+              borderTop: "4px solid #fff",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          />
+        )}
       </button>
 
       <canvas ref={canvasRef} style={{ display: "none" }} />
@@ -145,6 +178,13 @@ export default function CameraCapture() {
           ))}
         </ul>
       )}
+
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg);}
+          100% { transform: rotate(360deg);}
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,14 +1,14 @@
-    import React, { useState } from "react";
-    import type { DetectedText } from "../interfaces/DetectedText";
-    import type { ImageUploadProps } from "../interfaces/ImageUploadProps";
+import React, { useState } from "react";
+import type { DetectedText } from "../interfaces/DetectedText";
+import type { ImageUploadProps } from "../interfaces/ImageUploadProps";
 
 
 
-    export default function ImageUpload({ onResult }: ImageUploadProps) {
-        const [selectedFile, setSelectedFile] = useState<File | null>(null);
-        const [preview, setPreview] = useState<string | null>(null);
+export default function ImageUpload({ onResult }: ImageUploadProps) {
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [preview, setPreview] = useState<string | null>(null);
 
-        const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] ?? null;
         if (file) {
             setSelectedFile(file);
@@ -24,8 +24,8 @@
 
         try {
             const res = await fetch("http://localhost:5000/api/analyze-text", {
-            method: "POST",
-            body: formData,
+                method: "POST",
+                body: formData,
             });
 
             if (!res.ok) throw new Error("Error subiendo la imagen");
