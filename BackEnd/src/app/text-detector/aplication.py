@@ -1,3 +1,4 @@
+from flask_cors import CORS
 from flask import Flask, request, jsonify, abort
 import boto3, os
 from dotenv import load_dotenv
@@ -14,6 +15,8 @@ bucket_source = os.environ.get('BUCKET_SOURCE')
 bucket_dest = os.environ.get('BUCKET_DEST')
 
 application = Flask(__name__)
+CORS(application, origins=["http://localhost:5173"])
+# CORS(application, origins=["http://localhost:3000"])
 
 s3 = boto3.Session(
     aws_access_key_id=accessKeyId,
