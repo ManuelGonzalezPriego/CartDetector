@@ -1,6 +1,6 @@
 import type { Card } from "../interfaces/Card";
 
-export async function analyzeText(file:File) {
+export async function analyzeText(file: File): Promise<Card> {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -11,7 +11,15 @@ export async function analyzeText(file:File) {
 
     if (!res.ok) throw new Error("Error subiendo la imagen");
 
-    return res.json();
+    // Devolvemos el JSON, que ahora es directamente una Card
+    const data: Card = await res.json();
+    
+    // Si tu lógica asume que puede haber un error o no-Card, podrías revisarlo aquí
+    if ('error' in data) {
+        throw new Error(`API Error: ${data.error}`);
+    }
+    
+    return data; 
 }
 
 export async function getAllCards(): Promise<Card[]> {
@@ -20,8 +28,8 @@ export async function getAllCards(): Promise<Card[]> {
     });
 
     if (!res.ok) throw new Error("Error al obtner los datos de las imagenes");
-    
     const data:Card[] = await res.json();
+
     return data;
 }
 
