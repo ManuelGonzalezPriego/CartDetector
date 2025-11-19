@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
-import { analyzeText } from "../services/api";
+import { analyzeText, getAllCards } from "../services/api";
 import type { DetectedText } from "../interfaces/DetectedText";
-
+import type { Card } from "../interfaces/Card";
 export default function CameraCapture() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -10,11 +10,10 @@ export default function CameraCapture() {
   const [message, setMessage] = useState<string | null>(null);
   const [results, setResults] = useState<DetectedText[]>([]);
   const [loading, setLoading] = useState(false);
-  const [streamStarted, setStreamStarted] = useState(false);
-
   // Detectar si es móvil
   useEffect(() => {
     setIsMobile(/Mobi|Android/i.test(navigator.userAgent));
+    startCamera();
   }, []);
 
   // Encender la cámara
@@ -27,7 +26,6 @@ export default function CameraCapture() {
       });
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
-      setStreamStarted(true);
     } catch (err) {
       console.error(err);
       setMessage("No se pudo acceder a la cámara");
@@ -86,6 +84,7 @@ export default function CameraCapture() {
 
   return (
     <div>
+      
       {isMobile && (
         <div style={{ marginBottom: 10 }}>
           <label>Seleccionar cámara: </label>
@@ -100,13 +99,6 @@ export default function CameraCapture() {
           </select>
         </div>
       )}
-
-      <button
-        onClick={startCamera}
-        style={{ marginBottom: 10, padding: "5px 10px" }}
-      >
-        {streamStarted ? "Reiniciar cámara" : "Iniciar cámara"}
-      </button>
 
       <video
         ref={videoRef}
@@ -168,16 +160,6 @@ export default function CameraCapture() {
         </div>
       )}
 
-      {results.length > 0 && (
-        <ul style={{ marginTop: 10 }}>
-          {results.map((item, idx) => (
-            <li key={idx}>
-              <strong>{item.Text}</strong> - {item.Confidence.toFixed(2)}% (
-              {item.Type})
-            </li>
-          ))}
-        </ul>
-      )}
 
       <style>{`
         @keyframes spin {
