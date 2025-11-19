@@ -64,25 +64,24 @@ export default function CameraCaptureComponent({ onDetection }: CameraCapturePro
             const file = new File([blob], fileName, { type: "image/jpeg" });
 
             try {
-                const data = await analyzeText(file);
-
-                // Verificamos si hay textos, aunque Scryfall falle luego
-                if (data && Array.isArray(data.detected_texts) && data.detected_texts.length > 0) {
+                // analyzeText ya devuelve un objeto Card simple
+                const newCard = await analyzeText(file); 
+                
+                // Si la Card se recibió correctamente (y no tiene un error)
+                if (newCard && newCard.original_text) { 
                     displayMessage("¡Imagen procesada!");
                     
-                    const cardsWithFile = data.detected_texts.map((textData: any) => ({
-                        ...textData,
-                        file: fileName 
-                    }));
-
-                    onDetection(cardsWithFile); 
+                    // onDetection espera un array de Cards, así que pasamos [newCard]
+                    onDetection([newCard]); // <-- CAMBIO CLAVE: Envía el objeto en un array
                 } else {
-                    displayMessage("No se detectó texto legible.");
+                    // Si el back-end devolvió algo sin original_text (ej: 'No text detected')
+                    displayMessage("No se detectó texto legible o el servidor falló en el formato.");
                 }
-            } catch (err) {
-                displayMessage("Error al conectar con el servidor.");
-                console.error(err);
-            } finally {
+
+			} catch (err) {
+				displayMessage("Error al conectar con el servidor.");
+				console.error(err);
+			} finally {
                 setLoading(false);
             }
         }, "image/jpeg", 0.9);

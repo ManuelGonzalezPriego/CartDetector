@@ -14,7 +14,7 @@ export default function Cards({ detectedCards }: CardsProps) {
     };
 
     useEffect(() => {
-        const fetchNewCards = async () => {
+        const fetchNewCards = async () => {            
             // Filtro de seguridad: procesamos si no está en el Set O si el Set está vacío (primer carga)
             const newCardsToProcess = detectedCards.filter(card => {
                 if (!card.file) return true; // Si no hay archivo, procesar siempre por seguridad

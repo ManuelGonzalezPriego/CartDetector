@@ -15,8 +15,12 @@ bucket_source = os.environ.get('BUCKET_SOURCE')
 bucket_dest = os.environ.get('BUCKET_DEST')
 
 application = Flask(__name__)
-CORS(application, origins=["http://localhost:5173"])
-# CORS(application, origins=["http://localhost:3000"])
+# CORS(application, origins=["http://localhost:5173"])
+from flask_cors import CORS
+
+CORS(application,
+    resources={r"/api/*": {"origins": "*"}},
+    supports_credentials=True)
 
 s3 = boto3.Session(
     aws_access_key_id=accessKeyId,
@@ -43,19 +47,19 @@ def analyze_text():
         response = detect_text_in_image(filename)
 
         # Procesar resultados
-        processed_texts = [] # Usaremos una nueva lista para los resultados enriquecidos
+        processed_texts = [] 
         
         for d in response['TextDetections']:
             original_text = d['DetectedText']
             
-            # Llamada a la función de Google Translate (debe estar definida globalmente)
+            # Llamada a la función de Google Translate
             translation_info = check_and_translate_simple(original_text) 
             
-            # Crear el objeto final con los datos de traducción
+            # Crear el objeto con datos de traducción (se guarda en S3)
             text_info = {
                 'Text': original_text,
-                'Translation': translation_info['translation_text'], # Texto traducido (o el original si ya era inglés)
-                'DetectedLang': translation_info['detected_language'], # Idioma detectado
+                'Translation': translation_info['translation_text'], 
+                'DetectedLang': translation_info['detected_language'], 
                 'Confidence': d['Confidence'],
                 'Type': d['Type']
             }
@@ -63,15 +67,34 @@ def analyze_text():
             processed_texts.append(text_info)
 
         result_key = f"result_{os.path.splitext(filename)[0]}.json"
+        # Guardar la lista completa de textos detectados en S3
         s3.Object(bucket_dest, result_key).put(Body=json.dumps(processed_texts, ensure_ascii=False, indent=2).encode('utf-8'))
+        
+        if processed_texts:
+            # Usar el primer texto detectado como la "tarjeta principal"
+            first_text_info = processed_texts[0]
+            formatted_card = {
+                'file': result_key,
+                'original_text': first_text_info.get('Text'),
+                'translated_text': first_text_info.get('Translation')
+            }
+        else:
+            # Si no hay textos, devolver una Card con formato correcto pero vacío (original_text: null)
+            formatted_card = {
+                'file': result_key,
+                'original_text': None, 
+                'translated_text': None  
+            }
 
-        return jsonify({
-            'message': 'Texto detectado y traducido a inglés si fue necesario.',
-            'detected_texts': processed_texts,
-            'result_key': result_key
-        }), 200
+        # Devolver SOLO el objeto formateado para que el front-end lo añada directamente al historial
+        return jsonify(formatted_card), 200
+        
     except Exception as e:
-        print(f"{e}, {abort(500)}")
+        print(f"Error en analyze_text: {e}")
+        # En caso de error, devolver un JSON de error con código 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Error interno del servidor al analizar la imagen"}), 500
 
 @application.route('/api/get_all_cards', methods=['GET'])
 def get_all_cards():
@@ -85,9 +108,7 @@ def get_all_cards():
 
                 raw_json = file_obj.get()['Body'].read().decode('utf-8')
                 data = json.loads(raw_json)
-                
-                # --- 💡 MODIFICACIÓN CLAVE AQUÍ ---
-                
+                                
                 # Aseguramos que hay datos para procesar
                 if isinstance(data, list) and len(data) > 0:
                     first_item = data[0]
