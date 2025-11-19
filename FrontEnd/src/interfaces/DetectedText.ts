@@ -1,5 +1,6 @@
+import type { Card } from "./Card";
+
 export interface DetectedText {
-  Text: string;
-  Confidence: number;
-  Type: string;
+  file: string;
+  detected_texts: Card[];
 }
