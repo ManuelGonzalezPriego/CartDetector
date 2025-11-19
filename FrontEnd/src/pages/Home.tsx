@@ -1,4 +1,5 @@
 import CameraUpload from "../components/CamarUpload";
+import Cards from "../components/Card";
 
 export default function Home() {
 
@@ -6,6 +7,7 @@ export default function Home() {
         <div>
             <h1>Cart Detector</h1>
             <CameraUpload />
+            <Cards />
         </div>
     );
 }
