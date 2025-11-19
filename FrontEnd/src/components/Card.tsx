@@ -1,14 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import type { Card } from "../interfaces/Card";
 import { searchScryfall, type ScryfallCardData } from "../services/scryfall";
-
-interface MatchedCard extends Card {
-    scryfallData: ScryfallCardData | null; // Permitimos null para mostrar errores visuales
-}
-
-interface CardsProps {
-    detectedCards: Card[]; 
-}
+import type { CardsProps, MatchedCard } from "../interfaces/MatchedCard";
 
 export default function Cards({ detectedCards }: CardsProps) {
     const [matchedCards, setMatchedCards] = useState<MatchedCard[]>([]);
@@ -50,8 +42,6 @@ export default function Cards({ detectedCards }: CardsProps) {
                     scryfallData = await searchScryfall(translatedClean);
                 }
 
-                
-
                 setMatchedCards(prev => {
                     // Evitar duplicados visuales exactos si ya existen
                     const exists = prev.some(c => c.file === card.file && c.original_text === card.original_text);
@@ -90,17 +80,23 @@ export default function Cards({ detectedCards }: CardsProps) {
                     {matchedCards.map((card, index) => (
                         <div key={`${card.file}-${index}`} className="bg-gray-700 p-3 rounded-xl shadow-lg border-t-4 border-purple-500 animate-fade-in hover:scale-[1.02] transition-transform duration-200">
                             <h3 className="text-md font-bold text-purple-300 mb-2 truncate" title={card.scryfallData?.name}>
-                                {card.scryfallData?.name || "Sin nombre"}
+                                {card.scryfallData?.name || "Buscando / No encontrada..."}
                             </h3>
                             
                             <div className="relative aspect-[2.5/3.5] w-full overflow-hidden rounded-lg bg-black shadow-inner group">
-                                 <img 
-                                    src={card.scryfallData?.image_uris?.normal} 
-                                    alt={card.scryfallData?.name} 
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                />
-                                
+                                 {/* Lógica mejorada para mostrar imagen o placeholder */}
+                                 {card.scryfallData?.image_uris?.normal ? (
+                                     <img 
+                                        src={card.scryfallData.image_uris.normal} 
+                                        alt={card.scryfallData.name} 
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                    />
+                                 ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-900">
+                                        <span className="text-4xl opacity-50">?</span>
+                                    </div>
+                                 )}
                             </div>
                             
                             <div className="mt-3 pt-2 border-t border-gray-600 text-xs text-gray-400 flex justify-between">

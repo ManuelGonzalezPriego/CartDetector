@@ -23,8 +23,9 @@ export default function Home() {
     }, []);
 
     const handleDetection = (newCards: Card[]) => {
-        setDetectedCards(prevCards => [...prevCards, ...newCards]); 
+        setDetectedCards(prevCards => [...prevCards, ...newCards]);  
     };
+    
 
     return (
         <div className="flex flex-col lg:flex-row gap-4 p-4 bg-purple-950 min-h-screen">

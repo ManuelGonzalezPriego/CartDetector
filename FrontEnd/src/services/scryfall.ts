@@ -1,3 +1,4 @@
+
 // Interfaz para los datos que nos importan de Scryfall
 export interface ScryfallCardData {
     name: string;
