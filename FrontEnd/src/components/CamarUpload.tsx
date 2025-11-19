@@ -1,172 +1,117 @@
-import { useRef, useState, useEffect } from "react";
-import { analyzeText, getAllCards } from "../services/api";
-import type { DetectedText } from "../interfaces/DetectedText";
+import { useRef, useState, useEffect, useCallback } from "react";
+import { analyzeText } from "../services/api";
 import type { Card } from "../interfaces/Card";
-export default function CameraCapture() {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [camera, setCamera] = useState<"user" | "environment">("environment");
-  const [message, setMessage] = useState<string | null>(null);
-  const [results, setResults] = useState<DetectedText[]>([]);
-  const [loading, setLoading] = useState(false);
-  // Detectar si es móvil
-  useEffect(() => {
-    setIsMobile(/Mobi|Android/i.test(navigator.userAgent));
-    startCamera();
-  }, []);
 
-  // Encender la cámara
-  const startCamera = async () => {
-    if (!navigator.mediaDevices || !videoRef.current) return;
+interface CameraCaptureProps {
+    onDetection: (detectedCards: Card[]) => void;
+}
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: isMobile ? { facingMode: camera } : true,
-      });
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-    } catch (err) {
-      console.error(err);
-      setMessage("No se pudo acceder a la cámara");
-      setTimeout(() => setMessage(null), 3000);
-    }
-  };
+export default function CameraCaptureComponent({ onDetection }: CameraCaptureProps) {
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const [facingMode,] = useState<"user" | "environment">("environment");
+    const [message, setMessage] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
-  // Tomar foto y enviar al backend
-  const takePhoto = () => {
-    if (!canvasRef.current || !videoRef.current) return;
+    const displayMessage = useCallback((text: string, duration: number = 3000) => {
+        setMessage(text);
+        setTimeout(() => setMessage(null), duration);
+    }, []);
 
-    const ctx = canvasRef.current.getContext("2d");
-    if (!ctx) return;
-
-    canvasRef.current.width = videoRef.current.videoWidth;
-    canvasRef.current.height = videoRef.current.videoHeight;
-    ctx.drawImage(videoRef.current, 0, 0);
-
-    setLoading(true);
-
-    canvasRef.current.toBlob(async (blob) => {
-      if (!blob) {
-        setMessage("Error capturando la imagen");
-        setLoading(false);
-        setTimeout(() => setMessage(null), 3000);
-        return;
-      }
-
-      const file = new File([blob], `photo${Date.now()}.jpg`, { type: "image/jpeg" });
-
-      try {
-        const data = await analyzeText(file);
-
-        if (data && Array.isArray(data.detected_texts)) {
-          if (data.detected_texts.length > 0) {
-            setMessage("Imagen subida y texto detectado correctamente");
-            setResults(data.detected_texts);
-          } else {
-            setMessage("Imagen subida pero no se detectó texto");
-            setResults([]);
-          }
-        } else {
-          setMessage("Respuesta de la API no válida");
-          setResults([]);
+    const startCamera = useCallback(async () => {
+        if (!navigator.mediaDevices || !videoRef.current) return;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: isMobile ? { facingMode: facingMode } : true,
+            });
+            videoRef.current.srcObject = stream;
+            videoRef.current.play();
+        } catch (err) {
+            console.error(err);
         }
-      } catch (err) {
-        console.error(err);
-        setMessage("Error subiendo la imagen");
-        setResults([]);
-      } finally {
-        setLoading(false);
-        setTimeout(() => setMessage(null), 3000);
-      }
-    }, "image/jpeg");
-  };
+    }, [isMobile, facingMode]);
 
-  return (
-    <div>
-      
-      {isMobile && (
-        <div style={{ marginBottom: 10 }}>
-          <label>Seleccionar cámara: </label>
-          <select
-            value={camera}
-            onChange={(e) =>
-              setCamera(e.target.value as "user" | "environment")
+    useEffect(() => {
+        setIsMobile(/Mobi|Android/i.test(navigator.userAgent));
+    }, []);
+
+    useEffect(() => {
+        startCamera();
+    }, [facingMode, isMobile, startCamera]);
+
+    const takePhoto = () => {
+        if (!canvasRef.current || !videoRef.current) return;
+
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+
+        setLoading(true);
+        
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                setLoading(false);
+                return;
             }
-          >
-            <option value="environment">Trasera</option>
-            <option value="user">Delantera</option>
-          </select>
+            
+            const fileName = `photo${Date.now()}.jpg`;
+            const file = new File([blob], fileName, { type: "image/jpeg" });
+
+            try {
+                const data = await analyzeText(file);
+
+                // Verificamos si hay textos, aunque Scryfall falle luego
+                if (data && Array.isArray(data.detected_texts) && data.detected_texts.length > 0) {
+                    displayMessage("¡Imagen procesada!");
+                    
+                    const cardsWithFile = data.detected_texts.map((textData: any) => ({
+                        ...textData,
+                        file: fileName 
+                    }));
+
+                    onDetection(cardsWithFile); 
+                } else {
+                    displayMessage("No se detectó texto legible.");
+                }
+            } catch (err) {
+                displayMessage("Error al conectar con el servidor.");
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }, "image/jpeg", 0.9);
+    };
+
+    return (
+        <div className="flex flex-col items-center p-4 bg-gray-800 rounded-xl shadow-2xl border border-purple-800/50 relative">
+             <h2 className="text-xl font-bold mb-4 text-white border-b border-purple-600 pb-2 w-full text-center">Captura de Carta</h2>
+            
+            <div className="relative w-full max-w-lg aspect-video overflow-hidden rounded-xl shadow-2xl border-2 border-gray-700 mb-6">
+                <video ref={videoRef} className="w-full h-full object-cover bg-black" autoPlay playsInline muted />
+                
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                    <button 
+                        onClick={takePhoto} 
+                        disabled={loading} 
+                        className="w-16 h-16 bg-purple-600 rounded-full border-4 border-white flex items-center justify-center shadow-lg hover:bg-purple-700 active:scale-95 disabled:opacity-50 transition-all"
+                    >
+                        {loading ? <span className="animate-spin h-6 w-6 border-4 border-white border-t-transparent rounded-full"></span> : <span className="text-white text-2xl"></span>}
+                    </button>
+                </div>
+            </div>
+
+            {message && (
+                <div className="fixed top-20 right-4 md:right-10 bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl z-[9999] animate-bounce font-bold border-2 border-white">
+                    {message}
+                </div>
+            )}
+             <canvas ref={canvasRef} className="hidden" />
         </div>
-      )}
-
-      <video
-        ref={videoRef}
-        style={{
-          width: 300,
-          marginTop: 10,
-          border: "1px solid #ccc",
-          backgroundColor: "#000",
-        }}
-      />
-
-      <button
-        onClick={takePhoto}
-        disabled={loading}
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginTop: 10,
-          width: 70,
-          height: 70,
-          borderRadius: "50%",
-          border: "none",
-          backgroundColor: "#007bff",
-          cursor: "pointer",
-          position: "relative",
-        }}
-      >
-        {loading && (
-          <div
-            style={{
-              width: 30,
-              height: 30,
-              border: "4px solid rgba(255,255,255,0.3)",
-              borderTop: "4px solid #fff",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-            }}
-          />
-        )}
-      </button>
-
-      <canvas ref={canvasRef} style={{ display: "none" }} />
-
-      {message && (
-        <div
-          style={{
-            position: "fixed",
-            top: 20,
-            right: 20,
-            backgroundColor: "#333",
-            color: "#fff",
-            padding: "10px 20px",
-            borderRadius: "8px",
-            zIndex: 1000,
-          }}
-        >
-          {message}
-        </div>
-      )}
-
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg);}
-          100% { transform: rotate(360deg);}
-        }
-      `}</style>
-    </div>
-  );
+    );
 }
