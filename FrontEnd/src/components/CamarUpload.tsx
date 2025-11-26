@@ -13,7 +13,7 @@ export default function CameraCaptureComponent({ onDetection }: CameraCapturePro
     const [facingMode,] = useState<"user" | "environment">("environment");
     const [message, setMessage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-
+    
     const displayMessage = useCallback((text: string, duration: number = 3000) => {
         setMessage(text);
         setTimeout(() => setMessage(null), duration);

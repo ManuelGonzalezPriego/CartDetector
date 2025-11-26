@@ -1,0 +1,28 @@
+services:
+  # Servicio del Backend (Flask)
+  backend:
+    build: ./BackEnd
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mapeamos tu carpeta 'src' local a '/app/src' en el contenedor
+      - ./BackEnd/src:/app/src
+    env_file:
+      - ./BackEnd/.env
+    environment:
+      # COPIA ESTO EXACTAMENTE: app punto text_detector punto aplication
+      - FLASK_APP=app.text_detector.aplication
+      - FLASK_DEBUG=1
+      - PYTHONPATH=/app/src
+
+  # Servicio del Frontend (React + Vite)
+  frontend:
+    build:
+      context: ./FrontEnd
+      dockerfile: Dockerfile
+      target: dev  # <-- ¡ESTO ELIGE LA ETAPA DE DESARROLLO! prod por dev
+    ports:
+      # Mapea el puerto 5173 de Vite al 3000 de tu PC
+      - "3000:5173"
+    volumes:
+      - ./FrontEnd/src:/app/src
