@@ -2,11 +2,13 @@ from flask_cors import CORS
 from flask import Flask, request, jsonify, abort
 import boto3, os
 from dotenv import load_dotenv
-from update_image import upload_to_s3
-from detect_text import detect_text_in_image
+from .update_image import upload_to_s3
+from .detect_text import detect_text_in_image
 from datetime import datetime
 import json
-from translate import check_and_translate_simple
+from .translate import check_and_translate_simple
+from flask_cors import CORS
+
 load_dotenv()
 
 accessKeyId = os.environ.get('ACCESS_KEY_ID')
@@ -15,8 +17,6 @@ bucket_source = os.environ.get('BUCKET_SOURCE')
 bucket_dest = os.environ.get('BUCKET_DEST')
 
 application = Flask(__name__)
-# CORS(application, origins=["http://localhost:5173"])
-from flask_cors import CORS
 
 CORS(application,
     resources={r"/api/*": {"origins": "*"}},

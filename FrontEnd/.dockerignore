@@ -1,0 +1,10 @@
+# FrontEnd/.dockerignore
+
+# Ignora la carpeta de módulos de Node
+node_modules
+
+# Ignora la carpeta de compilación
+dist
+
+# Ignora los archivos de caché de Vite
+.vite
