@@ -12,6 +12,31 @@
    ``
 4. Y ejecutaremos en la raiz del proyecto el comando : ``docker-compose up --build -d``
 
+
+# Capturas
+<table>
+  <tr>
+    <td align="center" width="35%">
+      <img src="docsMedia/Cap1.png" alt="Captura 1" style="object-fit: cover;">
+      <br>
+      <strong>1. Escaneo</strong>
+    </td>
+    <td align="center" width="35%">
+      <img src="docsMedia/Cap2.png" alt="Captura 2"  style="object-fit: cover;">
+      <br>
+      <strong>2. Procesamiento</strong>
+    </td>
+    <td align="center" width="27%">
+      <img src="docsMedia/Cap3.png" alt="Captura 3" style="object-fit: cover;">
+      <br>
+      <strong>3. Resultado</strong>
+    </td>
+  </tr>
+</table>
+
+# Ejemplo de uso
+![Ejemplo Gif](docsMedia/example.gif)
+
 # Documentación
 
 *Este documento describe la arquitectura y el proceso técnico completo, desde la captura de la imagen por parte del usuario hasta la entrega de la información detallada de la carta.*
@@ -47,8 +72,3 @@
       - Normalización de Datos: El Backend recibe la respuesta cruda de Scryfall y aplica un proceso de formateo: limpia campos, estandariza estructuras y selecciona solo la información relevante.
       - Entrega al Cliente: La información procesada se envía de vuelta al Frontend en formato JSON.
       - Visualización: El Frontend renderiza los datos, mostrando al usuario la imagen de la carta junto con sus detalles técnicos, precios y reglas actualizadas
-
-# Capturas
-
-
-# Ejemplo de uso
