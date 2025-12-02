@@ -47,3 +47,8 @@
       - Normalización de Datos: El Backend recibe la respuesta cruda de Scryfall y aplica un proceso de formateo: limpia campos, estandariza estructuras y selecciona solo la información relevante.
       - Entrega al Cliente: La información procesada se envía de vuelta al Frontend en formato JSON.
       - Visualización: El Frontend renderiza los datos, mostrando al usuario la imagen de la carta junto con sus detalles técnicos, precios y reglas actualizadas
+
+# Capturas
+
+
+# Ejemplo de uso
